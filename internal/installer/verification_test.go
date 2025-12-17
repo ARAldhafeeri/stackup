@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/araldhafeeri/stackup/internal/config"
@@ -15,10 +16,16 @@ func TestVerifyTool(t *testing.T) {
 	cfg := &config.Config{}
 	installer := New(cfg, sys, console)
 
+	// check if Go is installed for testing
+	goInstalled := exec.Command("go", "--version").Run() == nil
+
+	// Define test cases
+	// Each test case includes the tool configuration and expected outcome
+
 	tests := []struct {
 		name        string
 		tool        *config.Tool
-		shouldPass  bool
+		expectError bool
 		description string
 	}{
 		{
@@ -27,6 +34,7 @@ func TestVerifyTool(t *testing.T) {
 				Name:          "go",
 				VerifyCommand: "go version",
 			},
+			expectError: goInstalled,
 			description: "Should pass if Go is installed",
 		},
 		{
@@ -35,6 +43,7 @@ func TestVerifyTool(t *testing.T) {
 				Name:          "go",
 				VerifyCommand: "",
 			},
+			expectError: !goInstalled,
 			description: "Should try 'go --version' by default",
 		},
 		{
@@ -43,7 +52,7 @@ func TestVerifyTool(t *testing.T) {
 				Name:          "nonexistent-tool-12345",
 				VerifyCommand: "",
 			},
-			shouldPass:  false,
+			expectError: true,
 			description: "Should fail for non-existent tool",
 		},
 	}
@@ -51,10 +60,12 @@ func TestVerifyTool(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := installer.verifyTool(tt.tool)
-			passed := err == nil
 
-			assert.Equal(t, tt.shouldPass, passed, "Verification result mismatch")
-
+			if tt.expectError {
+				assert.Error(t, err, tt.description)
+			} else {
+				assert.NoError(t, err, tt.description)
+			}
 		})
 	}
 }

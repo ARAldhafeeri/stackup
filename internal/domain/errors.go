@@ -18,3 +18,12 @@ var (
 	// ErrVerificationFailed indicates installation verification failed
 	ErrVerificationFailed = errors.New("verification failed")
 )
+
+// Check if the error matches any of our preflight errors
+func IsPreflightError(err error) bool {
+	return errors.Is(err, ErrNoInternet) ||
+		errors.Is(err, ErrNoPlatformConfig) ||
+		errors.Is(err, ErrNoInstallMethod) ||
+		errors.Is(err, ErrDependencyNotFound) ||
+		errors.Is(err, ErrVerificationFailed)
+}

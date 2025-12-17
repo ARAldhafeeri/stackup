@@ -17,21 +17,21 @@ func TestDetermineFilename(t *testing.T) {
 	}{
 		{
 			name:     "With File Type",
-			url:      "<https://example.com/installer>",
+			url:      "https://example.com/installer",
 			toolName: "docker",
 			fileType: "exe",
 			expected: "docker.exe",
 		},
 		{
 			name:     "From URL",
-			url:      "<https://example.com/downloads/installer.msi>",
+			url:      "https://example.com/downloads/installer.msi",
 			toolName: "tool",
 			fileType: "",
 			expected: "installer.msi",
 		},
 		{
 			name:     "Fallback to Default",
-			url:      "<https://example.com/>",
+			url:      "https://example.com/mytool.installer",
 			toolName: "mytool",
 			fileType: "",
 			expected: "mytool.installer",

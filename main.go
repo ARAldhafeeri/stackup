@@ -25,7 +25,7 @@ func main() {
 		fmt.Printf("StackUp v%s\n", version.Version)
 		os.Exit(0)
 	case "example":
-		fmt.Println(config.ExampleConfig)
+		fmt.Print(config.ExampleConfig)
 		os.Exit(0)
 	case "install":
 		if err := runInstall(); err != nil {

@@ -293,20 +293,22 @@ Run the test suite:
 
 ```bash
 # All tests
-go test -v
+go test ./...
 
+
+# With Make 
 # With coverage
-go test -cover
+make test -cover
 
 # Specific test
-go test -run TestDependencyResolution -v
+make test -run TestDependencyResolution -v
 
 # Benchmarks
-go test -bench=. -benchmem
+make test -bench=. -benchmem
 
 # Generate coverage report
-go test -coverprofile=coverage.out
-go tool cover -html=coverage.out
+make test -coverprofile=coverage.out
+make tool cover -html=coverage.out
 ```
 
 ## 📋 Requirements

@@ -94,6 +94,7 @@ func (d *DownloadInstaller) determineFilename(url, toolName, fileType string) st
 
 	// Try to extract filename from URL
 	filename := filepath.Base(url)
+
 	if filename != "" && filename != "." && filename != "/" {
 		return filename
 	}
