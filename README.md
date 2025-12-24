@@ -30,6 +30,10 @@ git clone https://github.com/araldhafeeri/stackup.git
 cd stackup
 go build -o stackup
 ```
+build for windows 
+```bash
+go build -o stackup.exe
+```
 
 **Or download the binary** from releases.
 
