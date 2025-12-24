@@ -36,6 +36,7 @@ func (r *CommandRunner) Run(commands []config.Command, stage string) error {
 		cmd := r.buildCommand(cmdDef)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
 
 		if err := cmd.Run(); err != nil {
 			if !cmdDef.IgnoreError {
@@ -59,5 +60,6 @@ func (r *CommandRunner) buildCommand(cmdDef config.Command) *exec.Cmd {
 		args := append([]string{cmdDef.Command}, cmdDef.Args...)
 		return exec.Command("sudo", args...)
 	}
+
 	return exec.Command(cmdDef.Command, cmdDef.Args...)
 }

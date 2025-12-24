@@ -121,6 +121,7 @@ func (i *Installer) installTool(tool *config.Tool) error {
 
 	// Try direct download
 	if platformConfig.Installer != "" {
+
 		if err := i.executor.InstallViaDownload(tool, platformConfig); err != nil {
 			return err
 		}

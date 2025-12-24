@@ -16,6 +16,9 @@ tools:
     windows:
       package_names:
         choco: git
+    post_install:
+      - command: git 
+        args: ['-v']
 
   - name: node
     display_name: "Node.js"
@@ -27,4 +30,7 @@ tools:
       brew: node@20
     windows:
       package_names:
-        choco: nodejs 
+        choco: nodejs # for winget ->  winget: OpenJS.NodeJS.LTS 
+    post_install:
+      - command: node
+        args: ['-v']
