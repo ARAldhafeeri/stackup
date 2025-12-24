@@ -26,8 +26,9 @@ func (pm *PackageManager) Install(tool *config.Tool, cfg *config.PlatformConfig)
 		return fmt.Errorf("no package manager available")
 	}
 
-	packageName := pm.getPackageName(tool, cfg)
-	cmd := pm.buildInstallCommand(packageName)
+	manager, packageName := pm.getPackageManagerAndName(tool, cfg)
+
+	cmd := pm.buildInstallCommand(packageName, manager)
 
 	if cmd == nil {
 		return fmt.Errorf("unsupported package manager: %s", pm.system.PackageManager)
@@ -62,9 +63,45 @@ func (pm *PackageManager) getPackageName(tool *config.Tool, cfg *config.Platform
 	return tool.Name
 }
 
+func (pm *PackageManager) getPackageManagerAndName(tool *config.Tool, cfg *config.PlatformConfig) (string, string) {
+	// First, check if a specific manager is configured for this tool
+	if tool.Manager != "" {
+		// If manager is specified, use it with the package names mapping
+		if cfg.PackageNames != nil {
+			if name, ok := cfg.PackageNames[tool.Manager]; ok {
+				return tool.Manager, name
+			}
+		}
+		// If no package name mapping, use tool name
+		return tool.Manager, tool.Name
+	}
+
+	// If no tool-specific manager, check package names for the system's package manager
+	if cfg.PackageNames != nil {
+		// First, try the system's detected package manager
+		if name, ok := cfg.PackageNames[pm.system.PackageManager]; ok {
+			return pm.system.PackageManager, name
+		}
+
+		// If system package manager not in package names, use the first available
+		for manager, name := range cfg.PackageNames {
+			return manager, name
+		}
+	}
+
+	// Check for brew-specific name (macOS only)
+	if cfg.Brew != "" && pm.system.PackageManager == domain.PackageManagerBrew {
+		return domain.PackageManagerBrew, cfg.Brew
+	}
+
+	// Default to system package manager with tool name
+	return pm.system.PackageManager, tool.Name
+}
+
 // buildInstallCommand creates the install command for the package manager
-func (pm *PackageManager) buildInstallCommand(packageName string) *exec.Cmd {
-	switch pm.system.PackageManager {
+func (pm *PackageManager) buildInstallCommand(packageName string, manager string) *exec.Cmd {
+
+	switch manager {
 	case domain.PackageManagerAPT:
 		if pm.interactive {
 			// Interactive mode - let user respond to prompts
@@ -96,7 +133,6 @@ func (pm *PackageManager) buildInstallCommand(packageName string) *exec.Cmd {
 
 	case domain.PackageManagerChoco:
 		if pm.interactive {
-			fmt.Println("installing", packageName)
 			return exec.Command("sudo", "choco", "install", packageName)
 		}
 		return exec.Command("sudo", "choco", "install", packageName, "-y")

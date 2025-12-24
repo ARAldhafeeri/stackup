@@ -102,7 +102,7 @@ func TestBuildInstallCommand(t *testing.T) {
 			sys := &domain.System{PackageManager: tt.pkgManager}
 			pm := NewPackageManager(sys)
 
-			cmd := pm.buildInstallCommand(tt.packageName)
+			cmd := pm.buildInstallCommand(tt.packageName, tt.pkgManager)
 
 			if tt.expectNil {
 				if cmd != nil {
