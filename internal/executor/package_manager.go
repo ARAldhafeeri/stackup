@@ -1,73 +1,97 @@
+// PackageManager handles installation via system package managers
 package executor
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
+	"strings"
 
 	"github.com/araldhafeeri/stackup/internal/config"
 	"github.com/araldhafeeri/stackup/internal/domain"
 )
 
-// PackageManager handles installation via system package managers
 type PackageManager struct {
 	system *domain.System
 }
 
-// NewPackageManager creates a new package manager installer
 func NewPackageManager(sys *domain.System) *PackageManager {
-	return &PackageManager{system: sys}
+	return &PackageManager{
+		system: sys,
+	}
 }
 
-// Install installs a tool using the appropriate package manager
 func (pm *PackageManager) Install(tool *config.Tool, cfg *config.PlatformConfig) error {
-	if pm.system.PackageManager == "" {
-		return fmt.Errorf("no package manager available")
+	// Use custom package manager commands if specified
+	if len(cfg.PackageManagerCommands) > 0 {
+		commands := pm.makeNonInteractive(cfg.PackageManagerCommands)
+		runner := NewCommandRunner(pm.system)
+		return runner.Run(commands, "Package manager install")
 	}
 
-	packageName := pm.getPackageName(tool, cfg)
-	cmd := pm.buildInstallCommand(packageName)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	// Try to determine and use system package manager
+	switch pm.system.OS {
+	case "windows":
+		return pm.installWindows(tool, cfg)
+	case "darwin":
+		return pm.installDarwin(tool, cfg)
+	case "linux":
+		return pm.installLinux(tool, cfg)
+	default:
+		return fmt.Errorf("unsupported OS: %s", pm.system.OS)
+	}
 }
 
-// getPackageName determines the correct package name for the current package manager
-func (pm *PackageManager) getPackageName(tool *config.Tool, cfg *config.PlatformConfig) string {
-	// Check for brew-specific name
-	if cfg.Brew != "" && pm.system.PackageManager == domain.PackageManagerBrew {
-		return cfg.Brew
-	}
+func (pm *PackageManager) makeNonInteractive(commands []config.Command) []config.Command {
+	nonInteractiveCmds := make([]config.Command, len(commands))
 
-	// Check for package manager specific names
-	if cfg.PackageNames != nil {
-		if name, ok := cfg.PackageNames[pm.system.PackageManager]; ok {
-			return name
+	for i, cmd := range commands {
+		commandStr := cmd.Command
+
+		// Add non-interactive flags based on package manager
+		if strings.Contains(commandStr, "winget install") {
+			commandStr = commandStr + " --accept-package-agreements --accept-source-agreements"
+		} else if strings.Contains(commandStr, "apt install") ||
+			strings.Contains(commandStr, "apt-get install") {
+			if !strings.Contains(commandStr, " -y") && !strings.Contains(commandStr, " --yes") {
+				commandStr = commandStr + " -y"
+			}
+		} else if strings.Contains(commandStr, "yum install") ||
+			strings.Contains(commandStr, "dnf install") {
+			if !strings.Contains(commandStr, " -y") {
+				commandStr = commandStr + " -y"
+			}
+		} else if strings.Contains(commandStr, "pacman -S") {
+			if !strings.Contains(commandStr, " --noconfirm") {
+				commandStr = commandStr + " --noconfirm"
+			}
+		} else if strings.Contains(commandStr, "choco install") {
+			if !strings.Contains(commandStr, " -y") {
+				commandStr = commandStr + " -y"
+			}
+		} else if strings.Contains(commandStr, "brew install") {
+			// Homebrew is usually non-interactive
+		}
+
+		nonInteractiveCmds[i] = config.Command{
+			Command: commandStr,
+			WorkDir: cmd.WorkDir,
+			Env:     cmd.Env,
 		}
 	}
 
-	// Default to tool name
-	return tool.Name
+	return nonInteractiveCmds
 }
 
-// buildInstallCommand creates the install command for the package manager
-func (pm *PackageManager) buildInstallCommand(packageName string) *exec.Cmd {
-	switch pm.system.PackageManager {
-	case domain.PackageManagerAPT:
-		return exec.Command("sudo", "apt-get", "install", "-y", packageName)
-	case domain.PackageManagerDNF:
-		return exec.Command("sudo", "dnf", "install", "-y", packageName)
-	case domain.PackageManagerPacman:
-		return exec.Command("sudo", "pacman", "-S", "--noconfirm", packageName)
-	case domain.PackageManagerBrew:
-		return exec.Command("brew", "install", packageName)
-	case domain.PackageManagerWinget:
-		return exec.Command("winget", "install", "-e", "--id", packageName)
-	case domain.PackageManagerChoco:
-		return exec.Command("choco", "install", packageName, "-y")
-	default:
-		return nil
+func (pm *PackageManager) installWindows(tool *config.Tool, cfg *config.PlatformConfig) error {
+	// Try winget first (Windows 10+)
+	wingetCmd := fmt.Sprintf("winget install --id %s --exact --accept-package-agreements --accept-source-agreements",
+		cfg.PackageName)
+
+	commands := []config.Command{
+		{Command: wingetCmd},
 	}
+
+	runner := NewCommandRunner(pm.system)
+	return runner.Run(commands, "Winget install")
 }
+
+// ... rest of your existing package manager methods ...

@@ -1,0 +1,30 @@
+profile: web-dev
+
+settings:
+  auto_update_path: true
+  verify_installations: true
+
+tools:
+  - name: git
+    display_name: "Git"
+    version: latest
+    linux:
+      package_names:
+        apt: git
+    macos:
+      brew: git
+    windows:
+      package_names:
+        choco: git
+
+  - name: node
+    display_name: "Node.js"
+    version: "20.x"
+    linux:
+      package_names:
+        apt: nodejs
+    macos:
+      brew: node@20
+    windows:
+      package_names:
+        choco: nodejs 
